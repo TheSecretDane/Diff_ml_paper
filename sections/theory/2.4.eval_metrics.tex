@@ -1,0 +1,32 @@
+\subsection{Evaluation Metrics} \label{sec:eval_metrics}
+
+To assess the performance of our models, we will use several evaluation metrics that capture different aspects of accuracy and reliability in both pricing and Greek estimation. These metrics include:
+\begin{itemize}
+    \item Clock time / Computational Efficiency: We will measure the time taken to train the model and to make predictions, as computational efficiency is crucial in practical applications.
+    \item \textbf{Pricing Accuracy:} We will evaluate the accuracy of the option price predictions using metrics such as Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), and the Coefficient of Determination ($R^2$).
+    \item \textbf{Greek Estimation Accuracy:} Similar to pricing accuracy, we will assess the accuracy of Greek estimates (Delta, Gamma, Vega, etc.) using MAE, RMSE, and $R^2$. 
+    \item Smoothness of Greek Surfaces: We will visually inspect the smoothness of the estimated Greek surfaces over a range of input parameters to ensure that the model captures the expected behavior.
+    \item \textbf{Mean Absolute Error (MAE):} This metric measures the average absolute difference between the predicted and true values. It is defined as
+    \begin{align}
+        \text{MAE} = \frac{1}{N} \sum_{i=1}^N | \hat{y}_i - y_i |,
+    \end{align}
+    where $\hat{y}_i$ is the predicted value, $y_i$ is the true value, and $N$ is the number of samples.
+    
+    \item \textbf{Root Mean Squared Error (RMSE):} This metric measures the square root of the average squared differences between predicted and true values. It is defined as
+    \begin{align}
+        \text{RMSE} = \sqrt{\frac{1}{N} \sum_{i=1}^N (\hat{y}_i - y_i)^2}.
+    \end{align}
+    
+    \item \textbf{Coefficient of Determination ($R^2$):} This metric indicates the proportion of variance in the dependent variable that is predictable from the independent variables. It is defined as
+    \begin{align}
+        R^2 = 1 - \frac{\sum_{i=1}^N (\hat{y}_i - y_i)^2}{\sum_{i=1}^N (y_i - \bar{y})^2},
+    \end{align}
+    where $\bar{y}$ is the mean of the true values.
+    
+    \item \textbf{Relative Error:} This metric measures the error relative to the true value, providing insight into the scale of errors. It is defined as
+    \begin{align}
+        \text{Relative Error} = \frac{1}{N} \sum_{i=1}^N \frac{|\hat{y}_i - y_i|}{|y_i|}.
+    \end{align}
+\end{itemize}
+
+We will benchmark the MCDML model against standard Monte Carlo estimates and traditional neural network surrogates using these metrics. This comprehensive evaluation will help us understand the strengths and limitations of the MCDML approach in the context of option pricing and Greek estimation.

@@ -1,0 +1,43 @@
+\subsection{Machine Learning}
+
+Monte Carlo is flexible, but slow (especially at high precision). Say we want Option prices for many different sets of parameters (e.g. $S_0, K, T, r, \sigma$), the idea is then to use Machine Learning to learn the mapping from model parameters (e.g. $S_0, K, T, r, \sigma$) to Option prices. This is a regression problem, where we want to learn a function $f: \mathbb{R}^5 \to \mathbb{R}$, that maps the 5 input parameters to the Option price. Without ML, we would have to rerun the simulation for each new set of parameters. With ML, we can train a model on a large dataset of simulated Option prices, and then use the trained model to predict Option prices for new sets of parameters almost instantly. 
+
+One-path pairs -> unbiased but very noisy estimates. 
+
+\subsubsection{Standard Surrogate Models}
+
+A standard approach is to use a feedforward Neural Network (NN) as a surrogate model. The NN is trained on a dataset of simulated Option prices, where the input features are the model parameters (state variables) (e.g. $S_0, K, T, r, \sigma$) and the target variable is the Option price. The NN learns to approximate the mapping from input features to Option prices by minimizing a loss function, typically the Mean Squared Error (MSE) between the predicted and true Option prices. This NN is a parametric function $f_\theta: \mathbb{R}^d \to \mathbb{R}$, where $\theta$ are the parameters (weights and biases) of the network, and $d$ is the number of input features. The architecture of the NN consists of multiple layers of interconnected neurons, where each neuron applies a non-linear activation function to a weighted sum of its inputs. Due to the Universal Approximation Theorem, a sufficiently large NN can approximate any continuous function to arbitrary accuracy, making it a powerful tool for function approximation in high-dimensional spaces. 
+
+Formally, given a training dataset $\{(x_i, y_i)\}_{i=1}^N$, where $x_i \in \mathbb{R}^d$ are the input features and $y_i \in \mathbb{R}$ are the target Option prices, the NN is trained to minimize the following loss function:
+\begin{align} \label{eq:NN_mse_loss}
+    \mathcal{L}(\theta) = \frac{1}{N} \sum_{i=1}^N (f_\theta(x_i) - y_i)^2,
+\end{align}
+where $f_\theta$ is the NN with parameters $\theta$. Once trained, the NN can be used to predict Option prices for new sets of parameters by simply feeding the input features into the network.
+
+\subsubsection{Differential Machine Learning}
+
+The core idea presented in \textcite{hugeDifferentialMachineLearning2020} is to enhance the training of a Neural Network (NN) by computing pathwise gradients using AAD \textcite{gilesSmokingAdjointsFast} and augmenting the loss function, not unlike other regularization methods as noted in \textcite{frandsenDeltaForceOption2022}. (ref some paper, maybe lasso, maybe the springer easy paper). 
+
+The augmented loss function incorporates both the standard MSE loss for Option prices and an additional term that penalizes discrepancies between the NN's predicted gradients (Greeks) and the true gradients obtained from pathwise differentiation. Extending \eqref{eq:NN_mse_loss}, the augmented loss function can be expressed as:
+\begin{align} \label{eq:NN_augmented_loss}
+    \mathcal{L}(\theta) = \frac{1}{N} \sum_{i=1}^N \Big( (f_\theta(x_i) - y_i)^2 + \lambda \|\nabla_x f_\theta(x_i) - g_i\|^2 \Big),
+\end{align}
+where $\nabla_x f_\theta(x_i)$ represents the gradient of the NN output with respect to the input features, $g_i$ are the true Greeks obtained via pathwise differentiation, and $\lambda$ is a hyperparameter that controls the trade-off between fitting the Option prices and matching the gradients.
+
+This encourages the NN to not only fit the Option prices accurately but also to capture the sensitivity of the prices with respect to the input parameters, leading to improved generalization, robustness and faster convergence rates. The additional information residing in the gradients can loosely be interpreted as the NN not only learning the function mapping from parameters to prices, but also learning the local geometry of this mapping, i.e., how small changes in the input parameters affect the output prices. 
+
+\subsubsection{Integration with Monte Carlo}
+
+How does this relate to Monte Carlo? Under the assumption of a known functional form of the underlying SDE's and payoff structure, Monte Carlo simulation can provide unbiased estimates of both Option prices and their corresponding Greeks. This provides a controlled environment where data amount is unlimited. The claim of unbiased estimates are important. As in \textcite{hugeDifferentialMachineLearning2020}, we train models on so-called one-path pairs, i.e. for a given draw of initial parameters we compute one path from which the Monte Carlo estimate is computed. This is very different from traditional MC estimation, where we would compute the average over many paths for a given set of parameters to increase accuracy.
+
+This does however provide unbiased, though very noisy estimates, which puts high demands on the model's ability to generalize from limited and noisy data. The differential training approach helps mitigate this issue by leveraging the additional information contained in the pathwise gradients, allowing the NN to learn more effectively from each training example. 
+
+This is done in batches of (256, 512, 1024, 8048, pairs) per epoch, in which the training of a model amounts to approximately one MC price, simulation count wise.
+
+The framework lends itself to online training - by online we mean step-wise batch training on continuously simulated data. This could in theory extend to reinforcement learning, where the model is continuously updated as new data arrives, allowing it to adapt to changing market conditions in real-time. 
+
+Hmmm. What about the underlying SDE that are simulated, those would have to change? 
+
+What about real-time data - could it approximate with no underlying SDE (CBS thesis?).
+
+What about real-time hedging? 

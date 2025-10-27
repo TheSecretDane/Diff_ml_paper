@@ -1,0 +1,65 @@
+\subsection{Monte Carlo Methods}
+
+The problem that arises, is that we often cannot compute the expectation of the discounted payoffs analytically as in \eqref{eq:bs_price}. So instead, we simulate. As per \textcite{glassermanMonteCarloMethods2003}, Monte Carlo methods are a broad class of computational algorithms that rely on repeated random sampling to obtain numerical results. In the context of Option pricing, we use Monte Carlo methods to estimate the expected value of the discounted payoff by simulating a large number of possible future asset price paths, computing the payoff for each path, and then averaging these payoffs. By a Law of Large Numbers (LLN) the monte carlo estimator converges to the true expected value as the number of simulations increases, that is, 
+\begin{align}
+    \hat{C}_N = \frac{1}{N} \sum_{i=1}^{N} e^{-rT} \max(S_T^{(i)} - K, 0) \xrightarrow{a.s.} C, \quad \text{as } N \to \infty,
+\end{align}
+where $S_T^{(i)}$ is the simulated stock price at maturity for the $i$-th simulation under the respective model SDE.
+
+% \begin{algorithm}[H] \label{alg:mc_bs_european_call}
+% \caption{Crude Monte Carlo for European Call Option Pricing}
+% \begin{algorithmic}[1]
+% \State \textbf{Input:} Initial stock price $S_0$, strike price $K$, time to maturity $T$, risk-free rate $r$, volatility $\sigma$, number of simulations $N$.
+% \State \textbf{Output:} Estimated option price $\hat{C}_N$
+% \For{$i = 1$ to $N$}
+%     \State Generate $Z_i \sim N(0,1)$
+%     \State Compute stock price at maturity: $S_T^{(i)} = S_0 \exp((r-0.5\sigma^2)T+\sigma \sqrt{T}Z_i)$
+%     \State Compute payoff: $\Pi^{(i)} = e^{-rT} \max(S_T^{(i)} - K, 0)$
+% \EndFor
+% \State Compute estimated option price: $\hat{C}_N = \frac{1}{N} \sum_{i=1}^{N} \Pi^{(i)}$
+% \State \textbf{Return} $\hat{C}_N$
+% \end{algorithmic}
+% \end{algorithm}
+
+\subsubsection{Schemes}
+
+To simulate the underlying asset price paths, we discretize the SDEs using numerical schemes. The simplest and most commonly used scheme is the Euler-Maruyama method, which approximates the continuous-time SDE by a discrete-time process. For example, for the Black-Scholes model in \eqref{eq:BS_stock}, the Euler-Maruyama discretization over a time grid $0 = t_0 < t_1 < \ldots < t_M = T$ with step size $\Delta t = T/M$ is given by:
+\begin{align}
+    S_{t_{n+1}} = S_{t_n} + \mu S_{t_n} \Delta t + \sigma S_{t_n} \Delta W_n,
+\end{align}
+where $\Delta W_n \sim N(0, \Delta t)$ are independent increments of the Brownian motion. For more complex models like the Bates model in \eqref{eq:bates_stock}-\eqref{eq:corr_brownian}, we need to use more sophisticated schemes that can handle jumps and stochastic volatility, such as the Milstein scheme or jump-adapted schemes.
+
+\textit{Potentially present both simulation algorithms for BS and Bates here, for Bates we use multiple.}
+
+\subsubsection{Variance Reduction Techniques}
+
+One concern regarding Monte Carlo is efficiency. Since we are averaging random numbers, estimates are inherently prone to noise. It can be shown that the MC estimator for a R.V. $Z$, defined on the probability space $(\Omega, \mathcal{F}, \mathbb{P})$, with finite variance $\sigma^2 = \text{Var}(Z) < \infty$, is unbiased, $\mathbb{E}[\hat{Z}_N] = \mathbb{E}[Z]$, and that a CLT applies for $N \to \infty$, such that the sample mean converges to a normal distribution with mean $z$ and standard error $\sigma/\sqrt{N}$. Thus, the standard error converges towards zero at a rate of $\sqrt{N}/2$ and as such, to half the standard error (or double the precision), we need to increase the number of simulations by a factor of 4. This can be computationally expensive, and so variance reduction techniques are prominently used to reduce $\sigma^2$ and thereby improve precision without having to increase $N$. 
+
+This directly benefits the learning process of any ML model  due to less variation in outputs resulting in the NN more easily learning the mapping, since there is less noise that needs to be filtered out, and it should be non-negligible wrt. computational cost. We utilize two simple variance reduction techniques as proposed in \textcite{glassermanMonteCarloMethods2003}; Antithetic Variates and Control Variates.
+
+\paragraph{Antithetic Variates:} Antithetic Variates exploits negative correlation in pairs to reduce variance for a given number of simulations. It is most simply illustrated in the case of a R.V. $Z \sim U[0,1]$ in which case $Z' = 1 - Z$ is also uniformly distributed over $[0,1]$, and together they form an antithetic pair. This extends to any distribution through the inverse transform method as per \textcite{glassermanMonteCarloMethods2003}, in fact for any distribution symmetric around the origin, $F^{-1}(1-\mu) = - F^{-1}(\mu)$ i.e. they have same magnitudes, but opposite signs\footnote{A formal comparison between variance estimators would warrant two draws for a pair, in which case the antithetic variate estimator has smaller variance provided the pair elements are negatively correlated i.e. $\text{Var}(Z+Z') < 2\text{Var}(Z)$ if $\text{cov}(Z, Z') < 0$ - see \textcite{glassermanMonteCarloMethods2003} for details, but note that a simple condition ensuring this is monotonicity of the mapping from inputs to outputs. In the case of symmetric distributions we can simply flip the sign to ease computational burden by 50 \% immediately, along with lowering the variance for the same relative amount of draws in the regular MC case, provided they are negatively correlated.}, where $F$ is the cumulative distribution function (CDF) of $Z$.
+
+In the case of (normal) GBM, it is assumed that the increments are normally distributed, $Z \sim N(0,1)$ and we can use \emph{antithetic variates}. That is, instead of simulating one $Z \sim N(0,1)$, we create antithetic pairs by drawing and $Z$ and computing $Z' = -Z$. Given that these two draws are negatively correlated, averaging them cancels out some of the noise, leading to a lower variance estimate, i.e., 
+\begin{align*}
+    \text{Var}\left(\frac{Z + Z'}{2}\right) &= \frac{1}{4} \left( \text{Var}(Z) + \text{Var}(Z') + 2\text{Cov}(Z, Z') \right) \\
+    \text{cov}(Z, Z') &= -\sigma^2 \\
+    &= \frac{1}{4} \left( 2\sigma^2 - 2\sigma^2 \right),
+\end{align*}
+\textit{Either actually write the math correctly, or go with footnote and just refer to glasserman, it is really simple so i think that will suffice.}
+So for each simulation $i$, in the case of payoffs, we compute two payoffs, $\Pi^{(i)}$ using $Z_i$ and $\Pi^{(i)'}$ using $-Z_i$, and then average them:
+\begin{align*}
+    \hat{C}_N = \frac{1}{2N} \sum_{i=1}^{N} \left( \Pi^{(i)} + \Pi^{(i)'} \right).
+\end{align*}
+
+\paragraph{Control Variates:}
+Say we want to estimate $E(X)$ but that $X$ is noisy. We also observe another (related) variable $Y$, for which we know $E(Y)$. If $X$ and $Y$ are correlated, we can use $Y$ to reduce the noise in our estimate of $E(X)$. The idea is to consider the new variable,
+\begin{align*}
+    X' = X - \beta(Y - E(Y)),
+\end{align*}
+Now, we don't know the Option price exactly, but we do know the expectation of the underlying stock price itself, $E(S_T) = S_0 e^{rT}$ which we can use as a control variate. Another often used control variate when outside the BS framework, is the BS price itself. 
+
+Reference glasserman. Talk about it essentially being a regression problem when parameters are unknown. And that the effectiveness of control variates can vary greatly depending on params (Table 4.1). Then look at his examples. Underlying asset, tractable dynamics (i want to do this), "any instrument that serves as a an effective hedge for Y is an effective control variate".
+
+No arbitrage. 
+
+\subsubsection{Greek Estimation}

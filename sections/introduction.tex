@@ -1,3 +1,34 @@
 \section{Introduction}
 
-Pricing of financial derivates is a fundamental problem in quantitative finance. A financial derivative is a contract whose value is derived from the performance of an underlying asset, index, or interest rate. Common examples include options, futures, and swaps. The accurate pricing of these instruments is crucial for risk management, investment strategies, and market efficiency. Barring the exception of simple cases like the Black-Scholes model, pricing financial derivatives often involves complex mathematical models and numerical methods. Monte Carlo simulation is one such numerical method that is widely used due to its flexibility and ability to handle high-dimensional problems. However, Monte Carlo methods can be computationally expensive, especially when high precision is required due to the estimators standard error being $1/\sqrt{N}$ convergent. By leveraging advancements in machine learning, we can potentially enhance the efficiency and accuracy of derivative pricing. This paper explores the integration of Monte Carlo simulation with differential machine learning techniques (MCDML) introduced in the CITEDIFFpaper to improve the pricing of financial derivatives. 
+Pricing of financial derivates is a fundamental problem in quantitative finance. Even for plain instruments such as European options, imposing realistic dynamics for the underlying asset(s) - stochastic volatility and or jumps - does not admit closed form solutions in which practitioners must rely on numerical methods in complex mathematical models. Among these, Monte Carlo (MC) appears attractive due to its flexibility but accuracy comes at a high computational price due to the MC estimators standard error being root-$N$ convergent. 
+
+This paper explores the integration of Monte Carlo simulation with differential machine learning techniques (MCDML) introduced in the \cite{hugeDifferentialMachineLearning2020} to improve the pricing of financial derivatives.
+
+\textit{Accurate pricing of these instruments is crucial for risk management, investment strategies, and market efficiency.} 
+
+Pricing derivative securities is a central problem in quantitative finance. Even for plain instruments such as European options, realistic dynamics for the underlying---stochastic volatility and/or jumps---rarely admit closed forms, forcing practitioners to rely on numerical methods. Among these, Monte Carlo (MC) remains attractive for its flexibility and dimension-insensitivity, but its computational cost is substantial: MC estimators converge at the root-$N$ rate, with standard error $\mathcal{O}(N^{-1/2})$, so obtaining tight confidence intervals can be expensive.
+
+This paper investigates whether \emph{differential machine learning} (DML) can serve as a fast, accurate surrogate for MC-based pricing and risk. By \emph{differential} we mean training a parametric approximator not only on prices but also on their sensitivities (Greeks), using algorithmic/automatic differentiation to provide derivative targets. The learning problem is then to approximate the pricing map
+\[
+(x \mapsto P(x)), \qquad x=(\text{contract features},\, \text{market/model parameters}),
+\]
+while simultaneously matching selected components of $\nabla P(x)$ (e.g., $\Delta$, Vega). Incorporating derivatives in the loss can improve data efficiency, enforce local smoothness consistent with financial theory, and---critically for risk---yield stable Greeks at inference.
+
+Our approach is deliberately pragmatic. We generate training data by MC under a widely used non-Gaussian dynamics (e.g., stochastic volatility with jumps), employ standard variance-reduction techniques to obtain high-quality labels, and then compare two learned surrogates:
+(i) a price-only model (``baseline ML'') and
+(ii) a differential model trained on prices \emph{and} Greeks (``DML'').
+We evaluate them on accuracy versus MC, quality of Greeks, and computational efficiency.
+
+\paragraph{Contributions and scope.}
+\begin{enumerate}
+\item We build a Monte Carlo data-generation pipeline for a realistic option-pricing model (baseline Black--Scholes and one advanced model), including variance reduction and Greek estimators suitable for that model.
+\item We implement and compare \emph{price-only} ML against \emph{differential} ML (prices + Greeks in the loss), using automatic differentiation to obtain derivative targets during data generation.
+\item We propose a clear evaluation protocol: (a) RMSE/MAE versus high-precision MC with confidence intervals, (b) Greek accuracy and smoothness (finite-difference stability), (c) wall-clock inference speedup relative to MC, and (d) generalization across strikes/maturities and out-of-training parameter boxes.
+\item We document when DML provides material gains over price-only learning and when it does not, highlighting limitations (e.g., jump-driven discontinuities) and practical trade-offs.
+\end{enumerate}
+
+\paragraph{Why this is interesting.}
+Production systems need fast pricing and \emph{fast risk}. MC delivers accuracy but is too slow for large books and intraday recalculation; closed forms are rare under realistic dynamics. Learned surrogates can offer orders-of-magnitude speedups at inference, but naive price-only training often yields noisy Greeks. DML directly targets this bottleneck by using derivative information during training, aiming to preserve the accuracy of MC while stabilizing Greeks and reducing the amount of MC data required.
+
+\paragraph{What this paper is not.}
+We do not attempt market calibration or historical backtests. Our focus is methodological: surrogate learning for pricing and risk under simulated dynamics, with transparent measurement of accuracy and compute.

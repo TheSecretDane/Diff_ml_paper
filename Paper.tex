@@ -1,22 +1,23 @@
 \documentclass{article}
 \usepackage{packages}
-\usepackage{unicode-math}
+\numberwithin{equation}{subsection}
+%\usepackage{unicode-math}
 
-%\addbibresource{references}
+\addbibresource{Differential ML.bib}
 \graphicspath{ {illustrations/} }
 
 \begin{document}
 \setlength{\parskip}{7pt}
-\setlength{\parindent}{0pt}
+%\setlength{\parindent}{0pt}
 
 \include{frontpage/frontpage.tex}
 
 \input{sections/introduction.tex}
 
-\input{sections/note1.tex}
+\input{sections/2.theory.tex}
 
-\input{sections/montecarlo.tex}
+\newpage
 
-%\printbibliography
+\printbibliography
 
 \end{document}

@@ -1,0 +1,61 @@
+\begin{enumerate}
+    \item Introduce the problem. Why Diff ML? 
+    \item Explain theory behind Monte Carlo pricing, Diff ML (maybe ML), financial models 
+    \item Show implementation of Diff ML for pricing European options in Black-Scholes model
+    \item Show implementation of Diff ML for pricing more complex derivatives in more complex models
+    \item Discuss results, pros and cons, future work  
+\end{enumerate}
+
+Structure of the paper: 
+
+1. Introduction
+   1.1 Related Work (optional)
+2. Theoretical Framework
+   2.1 Financial Models for Option Pricing
+       2.1.1 Black–Scholes
+       2.1.2 Bates (Stochastic Volatility with Jumps)
+   2.2 Monte Carlo Simulation Methods
+       2.2.1 Variance Reduction
+       2.2.2 Greek Estimation and AAD
+   2.3 Machine Learning Approaches
+       2.3.1 Standard Surrogate Models
+       2.3.2 Differential Machine Learning
+       2.3.3 Integration with Monte Carlo
+   2.4 Evaluation Metrics and Experimental Design
+3. Implementation
+   3.1 Data Generation (Monte Carlo setup)
+   3.2 Neural Network Training (standard vs differential)
+   3.3 Software Workflow and Reproducibility
+4. Results
+   4.1 Pricing Accuracy
+   4.2 Greek Accuracy and Smoothness
+   4.3 Computational Efficiency
+   4.4 Generalization / Robustness
+5. Discussion
+6. Conclusion
+
+Title Suggestions: 
+
+Funny title: 
+Whats the difference? 
+Making a difference? 
+Does it make a difference? 
+The differential advantage
+Learning the difference
+
+Subtitle:
+"Differential Machine Learning for Option Pricing: A Monte Carlo Study under the Bates Model"
+
+NOTES:
+
+Remove visited AT DATE, perferably in zotero everywhere on export. 
+
+Idea:
+
+Is sensitivity of option price or asset price to option premium used or perhaps expected option premium?
+
+Calibrate model to predict prices and implied vol from real-world data - hold up against market prices. 
+
+From Wiki on implied vol:
+
+Graphing implied volatilities against strike prices for a given expiry produces a skewed "smile" instead of the expected flat surface. The pattern differs across various markets. Equity options traded in American markets did not show a significant volatility smile before the Crash of 1987 but began showing one afterwards.[1] It is believed that investor reassessments of the probabilities of fat-tail have led to higher prices for out-of-the-money options. This anomaly implies deficiencies in the standard Black–Scholes option pricing model which assumes constant volatility and log-normal distributions of underlying asset returns. Empirical asset returns distributions, however, tend to exhibit fat-tails (kurtosis) and skew. Modelling the volatility smile is an active area of research in quantitative finance, and better pricing models such as the stochastic volatility model partially address this issue.
